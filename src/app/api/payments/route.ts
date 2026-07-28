@@ -201,7 +201,7 @@ export async function DELETE(request: Request) {
     const requests = rowsToDelete.map(rowIndex => ({
       deleteDimension: {
         range: {
-          sheetId: paymentsSheet.properties.sheetId,
+          sheetId: paymentsSheet.properties!.sheetId,
           dimension: 'ROWS',
           startIndex: rowIndex,
           endIndex: rowIndex + 1,
