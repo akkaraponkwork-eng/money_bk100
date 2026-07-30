@@ -248,7 +248,7 @@ export default function DashboardPage() {
                       ))}
                     </Pie>
                     <RechartsTooltip 
-                      formatter={(value: number) => `฿${value.toLocaleString()}`}
+                      formatter={(value: any) => `฿${Number(value).toLocaleString()}`}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}
                     />
                   </PieChart>
