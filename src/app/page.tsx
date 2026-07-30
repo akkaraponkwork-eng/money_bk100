@@ -23,6 +23,9 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
   
+  const [batchCurrentPage, setBatchCurrentPage] = useState(1);
+  const batchItemsPerPage = 10;
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,6 +35,7 @@ export default function Home() {
   // Reset pagination when tab, search, category, or batch changes
   useEffect(() => {
     setCurrentPage(1);
+    setBatchCurrentPage(1);
   }, [activeTab, searchQuery, categoryFilter, batchFilter]);
 
   const showToast = (msg: string, type: 'success'|'error' = 'success') => {
@@ -257,6 +261,9 @@ export default function Home() {
     return Array.from(map.values()).sort((a,b) => b.prefix.localeCompare(a.prefix));
   }, [records]);
 
+  const totalBatchPages = Math.ceil(batches.length / batchItemsPerPage);
+  const paginatedBatches = batches.slice((batchCurrentPage - 1) * batchItemsPerPage, batchCurrentPage * batchItemsPerPage);
+
   const latestPeriod = useMemo(() => {
     if (records.length === 0) return { month: new Date().getMonth() + 1, year: new Date().getFullYear() };
     
@@ -273,7 +280,7 @@ export default function Home() {
   
   const displayRecords = activeTab === 'latest' 
     ? records.filter(r => r.month === currentMonth && r.year === currentYear)
-    : records.filter(r => r.month !== currentMonth || r.year !== currentYear);
+    : records;
 
   const displayBatches = useMemo(() => {
     const map = new Map<string, string>();
@@ -333,28 +340,34 @@ export default function Home() {
         </div>
       )}
 
-      <header className="header" style={{ flexWrap: 'wrap', gap: '10px' }}>
-        <div className="header-title" onClick={() => router.push('/dashboard')} style={{ cursor: 'pointer' }}>
-          BK100 Payroll
+      <header className="header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="header-title" onClick={() => router.push('/dashboard')} style={{ cursor: 'pointer' }}>
+            BK100 Payroll
+          </div>
+          <button className="btn btn-ghost" onClick={handleLogout} title="ออกจากระบบ" style={{ padding: '8px', borderRadius: '50%', color: 'var(--danger)', background: 'rgba(220,38,38,0.1)' }}>
+            <LogOut size={18} />
+          </button>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button className="btn btn-ghost" onClick={() => router.push('/allowance')} title="เครื่องมือคำนวณเบี้ยเลี้ยง" style={{ padding: '8px', borderRadius: '50%', color: 'var(--primary)' }}>
+        
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', width: '100%' }}>
+          <button className="btn btn-ghost" onClick={() => router.push('/allowance')} title="เครื่องมือคำนวณเบี้ยเลี้ยง" style={{ padding: '8px', borderRadius: '50%', color: 'var(--primary)', background: 'var(--surface)', flexShrink: 0 }}>
             <Calculator size={18} />
           </button>
-          <button className="btn btn-ghost" onClick={() => router.push('/dashboard')} title="ไปหน้า Dashboard" style={{ padding: '8px', borderRadius: '50%' }}>
+          <button className="btn btn-ghost" onClick={() => router.push('/dashboard')} title="ไปหน้า Dashboard" style={{ padding: '8px', borderRadius: '50%', background: 'var(--surface)', flexShrink: 0 }}>
             <BarChart2 size={18} />
           </button>
           
-          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface)', borderRadius: '99px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface)', borderRadius: '99px', border: '1px solid var(--border)', overflow: 'hidden', flex: 1, minWidth: 0 }}>
             <select 
               value={uploadType} 
               onChange={e => setUploadType(e.target.value as any)}
-              style={{ padding: '8px 12px', border: 'none', background: 'transparent', outline: 'none', fontWeight: 600, color: 'var(--primary)' }}
+              style={{ padding: '8px 4px 8px 10px', border: 'none', background: 'transparent', outline: 'none', fontWeight: 600, color: 'var(--primary)', flex: 1, minWidth: 0, textOverflow: 'ellipsis' }}
             >
               <option value="salary">เงินเดือน</option>
               <option value="allowance">เบี้ยเลี้ยง</option>
             </select>
-            <button className="btn btn-ghost" onClick={downloadTemplate} title={`โหลดเทมเพลต ${uploadType === 'salary' ? 'เงินเดือน' : 'เบี้ยเลี้ยง'}`} style={{ padding: '8px', border: 'none', borderLeft: '1px solid var(--border)', borderRadius: 0 }}>
+            <button className="btn btn-ghost" onClick={downloadTemplate} title={`โหลดเทมเพลต ${uploadType === 'salary' ? 'เงินเดือน' : 'เบี้ยเลี้ยง'}`} style={{ padding: '8px 10px', border: 'none', borderLeft: '1px solid var(--border)', borderRadius: 0, flexShrink: 0 }}>
               <Download size={18} />
             </button>
           </div>
@@ -366,12 +379,9 @@ export default function Home() {
             ref={fileInputRef}
             onChange={handleFileUpload}
           />
-          <button className="btn btn-primary" onClick={() => fileInputRef.current?.click()} style={{ padding: '8px 16px' }}>
-            <Upload size={18} style={{ marginRight: 4 }} />
+          <button className="btn btn-primary" onClick={() => fileInputRef.current?.click()} style={{ padding: '8px 12px', whiteSpace: 'nowrap', flexShrink: 0, fontSize: '0.9rem' }}>
+            <Upload size={16} style={{ marginRight: 4 }} />
             นำเข้า
-          </button>
-          <button className="btn btn-ghost" onClick={handleLogout} title="ออกจากระบบ" style={{ padding: '8px', borderRadius: '50%', color: 'var(--danger)' }}>
-            <LogOut size={18} />
           </button>
         </div>
       </header>
@@ -382,7 +392,7 @@ export default function Home() {
             className={`tab ${activeTab === 'latest' ? 'active' : ''}`}
             onClick={() => setActiveTab('latest')}
           >
-            รอบปัจจุบัน ({format(new Date(), 'MMM yy', { locale: th })})
+            รอบปัจจุบัน
           </div>
           <div 
             className={`tab ${activeTab === 'history' ? 'active' : ''}`}
@@ -399,38 +409,40 @@ export default function Home() {
         </div>
 
         {/* Dashboard Card */}
-        <div className="card dashboard-card" onClick={() => router.push('/dashboard')} style={{ cursor: 'pointer' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontSize: '0.9rem', opacity: 0.9, letterSpacing: '0.5px' }}>
-                {activeTab === 'latest' ? 'สรุปยอดเงินเดือนนี้' : 'สรุปยอดเงินย้อนหลังทั้งหมด'}
-              </div>
-              <div style={{ fontSize: '2.2rem', fontWeight: 700, margin: '8px 0', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                ฿{paidAmount.toLocaleString()} 
-                <span style={{ fontSize: '1.1rem', opacity: 0.7, fontWeight: 500 }}>/ {totalAmount.toLocaleString()}</span>
+        {activeTab !== 'batches' && (
+          <div className="card dashboard-card" onClick={() => router.push('/dashboard')} style={{ cursor: 'pointer' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontSize: '0.9rem', opacity: 0.9, letterSpacing: '0.5px' }}>
+                  {activeTab === 'latest' ? `สรุปยอดเงินเดือนนี้ (${format(new Date(), 'MMM yy', { locale: th })})` : 'สรุปยอดเงินย้อนหลังทั้งหมด'}
+                </div>
+                <div style={{ fontSize: '2.2rem', fontWeight: 700, margin: '8px 0', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                  ฿{paidAmount.toLocaleString()} 
+                  <span style={{ fontSize: '1.1rem', opacity: 0.7, fontWeight: 500 }}>/ {totalAmount.toLocaleString()}</span>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="progress-bg" style={{ margin: '16px 0 12px 0' }}>
-            <div className="progress-fill" style={{ width: `${progressPercent}%` }}></div>
-          </div>
+            
+            <div className="progress-bg" style={{ margin: '16px 0 12px 0' }}>
+              <div className="progress-fill" style={{ width: `${progressPercent}%` }}></div>
+            </div>
 
-          <div className="flex-between" style={{ fontSize: '0.9rem', opacity: 0.9, fontWeight: 500 }}>
-            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-              <span style={{display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'white'}}></span>
-              จ่ายแล้ว: {paidRecords} / {totalRecords} บิล
-            </div>
-            <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-              <span style={{display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.4)'}}></span>
-              ค้างจ่าย: ฿{unpaidAmount.toLocaleString()}
+            <div className="flex-between" style={{ fontSize: '0.9rem', opacity: 0.9, fontWeight: 500 }}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                <span style={{display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'white'}}></span>
+                จ่ายแล้ว: {paidRecords} / {totalRecords} บิล
+              </div>
+              <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                <span style={{display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.4)'}}></span>
+                ค้างจ่าย: ฿{unpaidAmount.toLocaleString()}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {activeTab === 'batches' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '20px' }}>
-            {batches.map(b => (
+            {paginatedBatches.map(b => (
               <div key={b.prefix} className="card flex-between" style={{ padding: '20px' }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '4px' }}>
@@ -454,14 +466,38 @@ export default function Home() {
                 ไม่มีประวัติการสร้างบิล
               </div>
             )}
+            {/* Pagination Controls for Batches */}
+            {totalBatchPages > 1 && (
+              <div className="flex-between" style={{ padding: '16px 0', marginTop: '8px' }}>
+                <button 
+                  className="btn btn-ghost" 
+                  disabled={batchCurrentPage === 1}
+                  onClick={() => setBatchCurrentPage(p => p - 1)}
+                  style={{ padding: '8px', opacity: batchCurrentPage === 1 ? 0.5 : 1 }}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  หน้า {batchCurrentPage} / {totalBatchPages}
+                </div>
+                <button 
+                  className="btn btn-ghost" 
+                  disabled={batchCurrentPage === totalBatchPages}
+                  onClick={() => setBatchCurrentPage(p => p + 1)}
+                  style={{ padding: '8px', opacity: batchCurrentPage === totalBatchPages ? 0.5 : 1 }}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <>
             {/* Category Filter */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', background: 'rgba(255,255,255,0.4)', padding: '4px', borderRadius: '99px', border: '1px solid var(--border)' }}>
-              <button className={`btn ${categoryFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => {setCategoryFilter('all'); setBatchFilter('all');}} style={{ flex: 1, padding: '6px', fontSize: '0.85rem', border: 'none' }}>ทั้งหมด</button>
-              <button className={`btn ${categoryFilter === 'salary' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => {setCategoryFilter('salary'); setBatchFilter('all');}} style={{ flex: 1, padding: '6px', fontSize: '0.85rem', border: 'none' }}>เฉพาะเงินเดือน</button>
-              <button className={`btn ${categoryFilter === 'allowance' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => {setCategoryFilter('allowance'); setBatchFilter('all');}} style={{ flex: 1, padding: '6px', fontSize: '0.85rem', border: 'none' }}>เฉพาะเบี้ยเลี้ยง</button>
+            <div className="category-filters hide-scrollbar" style={{ display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', WebkitOverflowScrolling: 'touch', gap: '8px', marginBottom: '12px', background: 'rgba(255,255,255,0.4)', padding: '4px', borderRadius: '20px', border: '1px solid var(--border)' }}>
+              <button className={`btn ${categoryFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => {setCategoryFilter('all'); setBatchFilter('all');}} style={{ flex: '1 0 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>ทั้งหมด</button>
+              <button className={`btn ${categoryFilter === 'salary' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => {setCategoryFilter('salary'); setBatchFilter('all');}} style={{ flex: '1 0 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>เฉพาะเงินเดือน</button>
+              <button className={`btn ${categoryFilter === 'allowance' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => {setCategoryFilter('allowance'); setBatchFilter('all');}} style={{ flex: '1 0 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>เฉพาะเบี้ยเลี้ยง</button>
             </div>
 
             {/* Batch Filter Dropdown */}
@@ -518,7 +554,6 @@ export default function Home() {
                 onClick={() => router.push(`/history/${encodeURIComponent(record.firstName + ' ' + record.lastName)}`)}
                 style={{ 
                   padding: '16px 20px', 
-                  borderLeft: `5px solid ${record.isPaid ? 'var(--success)' : 'var(--warning)'}`,
                   animationDelay: `${idx * 0.03}s`,
                   marginBottom: 0,
                   cursor: 'pointer',
@@ -558,10 +593,10 @@ export default function Home() {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <button 
                     className={`btn badge ${record.isPaid ? 'badge-success' : 'badge-danger'}`}
-                    style={{ minWidth: '110px', cursor: 'pointer', display: 'flex', gap: '6px', justifyContent: 'center' }}
+                    style={{ minWidth: '120px', cursor: 'pointer', display: 'flex', gap: '6px', justifyContent: 'center' }}
                     onClick={(e) => togglePayment(e, record)}
                   >
-                    {record.isPaid ? <><CheckCircle size={14} strokeWidth={2.5} /> จ่ายแล้ว</> : <><Circle size={14} strokeWidth={2.5} /> รอการจ่าย</>}
+                    {record.isPaid ? <><CheckCircle size={14} strokeWidth={2.5} /> จ่ายแล้ว{record.paidAt ? ` ${format(new Date(record.paidAt), 'HH:mm')} น.` : ''}</> : <><Circle size={14} strokeWidth={2.5} /> รอการจ่าย</>}
                   </button>
                   <button
                     className="btn btn-ghost"

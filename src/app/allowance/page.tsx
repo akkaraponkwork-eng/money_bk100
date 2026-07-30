@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Calculator, Save, Search, CheckCircle } from 'lucide-react';
+import { ChevronLeft, Calculator, Save, Search, CheckCircle, Settings, X } from 'lucide-react';
 import { format, getDaysInMonth } from 'date-fns';
 import { th } from 'date-fns/locale';
 
@@ -13,6 +13,7 @@ export default function AllowanceCalculator() {
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
 
   // Settings state
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [baseRate, setBaseRate] = useState(Number(process.env.NEXT_PUBLIC_DEFAULT_BASE_RATE) || 120);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -325,79 +326,43 @@ export default function AllowanceCalculator() {
         <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Calculator size={20} /> เครื่องมือคำนวณเบี้ยเลี้ยง
         </div>
-        <button 
-          className="btn btn-ghost" 
-          onClick={() => setShowBlacklistPopup(true)}
-          style={{ padding: '8px', color: 'var(--danger)' }}
-          title="จัดการบัญชีม้า"
-        >
-          บัญชีม้า
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            className="btn btn-ghost"
+            onClick={() => setShowSettingsModal(true)}
+            style={{ padding: '8px 12px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface)' }}
+            title="ตั้งค่ารอบเบี้ยเลี้ยง"
+          >
+            <Settings size={18} /> ตั้งค่า
+          </button>
+          <button 
+            className="btn btn-ghost" 
+            onClick={() => setShowBlacklistPopup(true)}
+            style={{ padding: '8px 12px', color: 'var(--danger)', background: '#fee2e2' }}
+            title="จัดการบัญชีม้า"
+          >
+            บัญชีม้า
+          </button>
+        </div>
       </header>
 
-      {/* Settings Card */}
-      <div className="card animate-fade-in" style={{ padding: '20px', background: 'var(--primary-gradient)', color: 'white', border: 'none', marginBottom: '24px' }}>
-        <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>ตั้งค่ารอบเบี้ยเลี้ยง</div>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.9, marginBottom: '6px' }}>เรทต่อวัน (บาท)</label>
-            <input 
-              type="number" 
-              value={baseRate}
-              onChange={(e) => setBaseRate(Number(e.target.value))}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: 'none', fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary)', background: 'white' }}
-            />
+      {/* Current Settings Summary */}
+      <div className="card animate-fade-in flex-between" style={{ padding: '16px 20px', background: 'var(--surface)', border: '1px solid var(--border)', marginBottom: '24px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }} onClick={() => setShowSettingsModal(true)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+            <Calculator size={20} />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.9, marginBottom: '6px' }}>เดือน</label>
-            <select 
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: 'none', fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary)', background: 'white' }}
-            >
-              {Array.from({length: 12}).map((_, i) => (
-                <option key={i+1} value={i+1}>{format(new Date(2000, i, 1), 'MMMM', { locale: th })}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.9, marginBottom: '6px' }}>ปี</label>
-            <input 
-              type="number" 
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: 'none', fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary)', background: 'white' }}
-            />
-          </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.9, marginBottom: '6px' }}>รอบการจ่ายเบี้ยเลี้ยง</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {[1, 2, 3].map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p as 1|2|3)}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: period === p ? 'white' : 'rgba(255,255,255,0.2)',
-                    color: period === p ? 'var(--primary)' : 'white',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  รอบ {p}
-                </button>
-              ))}
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>รอบเบี้ยเลี้ยงปัจจุบัน</div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+              รอบ {period} • {format(new Date(2000, month - 1, 1), 'MMMM', { locale: th })} {year}
             </div>
-            <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '8px', textAlign: 'center' }}>
-              {period === 1 && "คิดเงินตั้งแต่วันที่ 1 - 10"}
-              {period === 2 && "คิดเงินตั้งแต่วันที่ 11 - 25"}
-              {period === 3 && "คิดเงินตั้งแต่วันที่ 26 - วันเงินเดือนออก (หลบเสาร์อาทิตย์)"}
-            </div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>เรทต่อวัน</div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)', marginTop: '2px' }}>
+            ฿{baseRate}
           </div>
         </div>
       </div>
@@ -424,7 +389,7 @@ export default function AllowanceCalculator() {
               />
             </div>
             
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }}>
+            <div className="hide-scrollbar" style={{ display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }}>
               <button 
                 className={`btn ${filterMode === 'all' ? 'btn-primary' : 'btn-ghost'}`} 
                 onClick={() => setFilterMode('all')} 
@@ -803,6 +768,93 @@ export default function AllowanceCalculator() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', background: 'white' }}>
+            <div className="flex-between" style={{ padding: '20px', borderBottom: '1px solid var(--border)', background: 'var(--primary-gradient)', color: 'white', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>ตั้งค่ารอบเบี้ยเลี้ยง</div>
+              <button onClick={() => setShowSettingsModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
+            </div>
+            
+            <div style={{ padding: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>เรทต่อวัน (บาท)</label>
+                  <input 
+                    type="number" 
+                    value={baseRate}
+                    onChange={(e) => setBaseRate(Number(e.target.value))}
+                    style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '1.1rem', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>เดือน</label>
+                  <select 
+                    value={month}
+                    onChange={(e) => setMonth(Number(e.target.value))}
+                    style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '1rem', outline: 'none', background: 'white' }}
+                  >
+                    {Array.from({length: 12}).map((_, i) => (
+                      <option key={i+1} value={i+1}>{format(new Date(2000, i, 1), 'MMMM', { locale: th })}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>ปี</label>
+                  <input 
+                    type="number" 
+                    value={year}
+                    onChange={(e) => setYear(Number(e.target.value))}
+                    style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '1rem', outline: 'none' }}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>รอบการจ่ายเบี้ยเลี้ยง</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {[1, 2, 3].map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriod(p as 1|2|3)}
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: period === p ? 'none' : '1px solid var(--border)',
+                        background: period === p ? 'var(--primary-gradient)' : 'var(--surface)',
+                        color: period === p ? 'white' : 'var(--text-secondary)',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      รอบ {p}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '12px', textAlign: 'center', background: 'var(--surface-2)', padding: '8px', borderRadius: '8px' }}>
+                  {period === 1 && "คิดเงินตั้งแต่วันที่ 1 - 10"}
+                  {period === 2 && "คิดเงินตั้งแต่วันที่ 11 - 25"}
+                  {period === 3 && "คิดเงินตั้งแต่วันที่ 26 - วันเงินเดือนออก (หลบเสาร์อาทิตย์)"}
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', textAlign: 'right' }}>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setShowSettingsModal(false)}
+                style={{ padding: '10px 24px' }}
+              >
+                บันทึกการตั้งค่า
+              </button>
             </div>
           </div>
         </div>

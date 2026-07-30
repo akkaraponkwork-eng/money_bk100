@@ -198,7 +198,7 @@ export async function DELETE(request: Request) {
     // Sort descending so deleting higher indices doesn't affect lower indices
     rowsToDelete.sort((a, b) => b - a);
 
-    const requests = rowsToDelete.map(rowIndex => ({
+    const requests: any[] = rowsToDelete.map(rowIndex => ({
       deleteDimension: {
         range: {
           sheetId: paymentsSheet.properties!.sheetId,
@@ -208,6 +208,77 @@ export async function DELETE(request: Request) {
         },
       },
     }));
+
+    // === Backup Logic ===
+    let deletedPaymentsSheetId: number | null = null;
+    const deletedSheet = sheetInfo.data.sheets?.find(s => s.properties?.title === 'DeletedPayments');
+    
+    if (deletedSheet) {
+      deletedPaymentsSheetId = deletedSheet.properties!.sheetId!;
+    } else {
+      const createSheetRes = await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: sheetId,
+        requestBody: {
+          requests: [{ addSheet: { properties: { title: 'DeletedPayments' } } }]
+        }
+      });
+      deletedPaymentsSheetId = createSheetRes.data.replies![0].addSheet!.properties!.sheetId!;
+    }
+
+    // Append to DeletedPayments
+    const backupRows = rowsToDelete.map(index => {
+      const row = [...rows[index]];
+      while (row.length < 16) row.push(''); // Pad to 16 cols (A-P)
+      row[16] = new Date().toISOString(); // Col Q is deletedAt
+      return row;
+    });
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: sheetId,
+      range: 'DeletedPayments!A:Q',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: backupRows }
+    });
+
+    // Cleanup old backups (> 1 month)
+    try {
+      const backupDataRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: 'DeletedPayments!A:Q'
+      });
+      const backupRowsData = backupDataRes.data.values || [];
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      
+      const oldBackupIndices: number[] = [];
+      backupRowsData.forEach((row, index) => {
+        const deletedAtStr = row[16];
+        if (deletedAtStr) {
+          const deletedAt = new Date(deletedAtStr);
+          if (!isNaN(deletedAt.getTime()) && deletedAt < oneMonthAgo) {
+            oldBackupIndices.push(index);
+          }
+        }
+      });
+      
+      if (oldBackupIndices.length > 0) {
+        oldBackupIndices.sort((a,b) => b - a);
+        const cleanupRequests = oldBackupIndices.map(rowIndex => ({
+          deleteDimension: {
+            range: {
+              sheetId: deletedPaymentsSheetId!,
+              dimension: 'ROWS',
+              startIndex: rowIndex,
+              endIndex: rowIndex + 1,
+            },
+          },
+        }));
+        requests.push(...cleanupRequests);
+      }
+    } catch (cleanupErr) {
+      console.error('Error cleaning up backups', cleanupErr);
+    }
+    // ====================
 
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: sheetId,

@@ -89,7 +89,7 @@ export default function HistoryPage() {
           <div style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '24px', marginBottom: '12px', paddingLeft: '8px' }}>รายการทั้งหมด</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {records.sort((a,b) => (b.year*100+b.month) - (a.year*100+a.month)).map(r => (
-              <div key={r.id} className="card flex-between" style={{ padding: '16px 20px', marginBottom: 0, borderLeft: `4px solid ${r.paymentType === 'allowance' ? 'var(--success)' : 'var(--primary)'}` }}>
+              <div key={r.id} className="card flex-between" style={{ padding: '16px 20px', marginBottom: 0 }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{r.month}/{r.year}</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>

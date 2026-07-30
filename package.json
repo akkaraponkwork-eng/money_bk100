@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
     "date-fns": "^4.1.0",
     "googleapis": "^173.0.0",
     "lucide-react": "^1.27.0",

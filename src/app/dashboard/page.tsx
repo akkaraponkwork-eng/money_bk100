@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Download, Users, Banknote, Calendar } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import type { PaymentRecord } from '@/types';
 
 export default function DashboardPage() {
@@ -169,21 +170,23 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <header className="flex-between" style={{ marginBottom: '24px' }}>
+      <header className="flex-between" style={{ marginBottom: '24px', flexWrap: 'nowrap', gap: '8px' }}>
         <button 
           className="btn btn-ghost" 
           onClick={() => router.push('/')}
-          style={{ padding: '8px 16px', background: 'var(--surface)' }}
+          style={{ padding: '8px 12px', background: 'var(--surface)', whiteSpace: 'nowrap', flexShrink: 0 }}
         >
           <ChevronLeft size={18} /> กลับ
         </button>
-        <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>ภาพรวมระบบ</div>
+        <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', flex: 1, textAlign: 'center' }}>
+          ภาพรวมระบบ
+        </div>
         <button 
           className="btn btn-primary" 
           onClick={exportExcel}
-          style={{ padding: '8px 16px' }}
+          style={{ padding: '8px 12px', whiteSpace: 'nowrap', flexShrink: 0 }}
         >
-          <Download size={18} /> Export
+          <Download size={18} style={{ marginRight: '4px' }} /> Export
         </button>
       </header>
 
@@ -213,29 +216,91 @@ export default function DashboardPage() {
             </select>
           </div>
 
+          {/* Donut Chart (KBank Style) */}
+          <div className="card" style={{ padding: '24px', marginBottom: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '16px', alignSelf: 'flex-start', color: 'var(--text-primary)' }}>
+              สัดส่วนการจ่ายเงิน
+            </div>
+            
+            <div style={{ position: 'relative', width: '220px', height: '220px' }}>
+              {!loading && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'จ่ายแล้ว', value: stats.paidAmount, color: '#10b981' },
+                        { name: 'ค้างจ่าย', value: stats.unpaidAmount, color: '#ef4444' },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={75}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                      cornerRadius={8}
+                    >
+                      {[
+                        { name: 'จ่ายแล้ว', value: stats.paidAmount, color: '#10b981' },
+                        { name: 'ค้างจ่าย', value: stats.unpaidAmount, color: '#ef4444' },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip 
+                      formatter={(value: number) => `฿${value.toLocaleString()}`}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+              
+              {/* Center Text */}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>ยอดรวม</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>
+                  ฿{(stats.totalAmount > 10000 ? (stats.totalAmount / 1000).toFixed(1) + 'k' : stats.totalAmount.toLocaleString())}
+                </div>
+              </div>
+            </div>
+
+            {/* Legend below the chart */}
+            <div style={{ display: 'flex', gap: '24px', marginTop: '16px', width: '100%', justifyContent: 'center', padding: '16px 0 0 0', borderTop: '1px solid var(--border)' }}>
+               <div style={{ textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                     <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} /> จ่ายแล้ว
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>฿{stats.paidAmount.toLocaleString()}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{stats.totalPaidRecords} รายการ</div>
+               </div>
+               <div style={{ width: '1px', background: 'var(--border)' }} />
+               <div style={{ textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                     <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }} /> ค้างจ่าย
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary)' }}>฿{stats.unpaidAmount.toLocaleString()}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{stats.totalUnpaidRecords} รายการ</div>
+               </div>
+            </div>
+          </div>
+
           {/* Top Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
-            <div className="card" style={{ marginBottom: 0, padding: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                <Banknote size={16} /> ยอดเงินทั้งหมด
+            <div className="card flex-between" style={{ marginBottom: 0, padding: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>
+                  <Banknote size={16} /> ยอดเงินทั้งหมด
+                </div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>฿{stats.totalAmount.toLocaleString()}</div>
               </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>฿{stats.totalAmount.toLocaleString()}</div>
             </div>
-            <div className="card" style={{ marginBottom: 0, padding: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                <Users size={16} /> จำนวนกำลังพล
+            <div className="card flex-between" style={{ marginBottom: 0, padding: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>
+                  <Users size={16} /> จำนวนกำลังพล
+                </div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{stats.totalPeople} นาย</div>
               </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{stats.totalPeople} นาย</div>
-            </div>
-            <div className="card" style={{ marginBottom: 0, padding: '16px', background: 'var(--success-gradient)', color: 'white', border: 'none' }}>
-              <div style={{ opacity: 0.9, marginBottom: '4px', fontSize: '0.9rem' }}>ยอดจ่ายแล้ว</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>฿{stats.paidAmount.toLocaleString()}</div>
-              <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '4px' }}>{stats.totalPaidRecords} รายการ</div>
-            </div>
-            <div className="card" style={{ marginBottom: 0, padding: '16px', background: 'var(--danger-gradient)', color: 'white', border: 'none' }}>
-              <div style={{ opacity: 0.9, marginBottom: '4px', fontSize: '0.9rem' }}>ยอดค้างจ่าย</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>฿{stats.unpaidAmount.toLocaleString()}</div>
-              <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '4px' }}>{stats.totalUnpaidRecords} รายการ</div>
             </div>
           </div>
 

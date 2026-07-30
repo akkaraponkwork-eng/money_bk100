@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-30T06:30:00Z",
+  "title": "Design System: moneybk100",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Deep Cobalt" },
+      "background": { "role": "neutral", "displayName": "Soft Slate Background" }
+    },
+    "shadows": [
+      { "name": "glass-shadow", "value": "0 10px 40px -10px rgba(0, 0, 0, 0.05)", "purpose": "Applied to resting cards to lift them gently." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "btn-primary",
+      "description": "Primary action button with gradient and shadow.",
+      "html": "<button class=\"ds-btn-primary\">SAVE CHANGES</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 99px; border: none; font-size: 0.95rem; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; transition: all 0.2s ease; background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); } .ds-btn-primary:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); transform: translateY(-1px); } .ds-btn-primary:active { transform: scale(0.96); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "btn-ghost",
+      "description": "Secondary action button.",
+      "html": "<button class=\"ds-btn-ghost\">CANCEL</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, 0.8); font-size: 0.95rem; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; transition: all 0.2s ease; background: rgba(255, 255, 255, 0.6); color: #0f172a; box-shadow: 0 2px 10px rgba(0,0,0,0.05); } .ds-btn-ghost:hover { background: rgba(255, 255, 255, 0.9); } .ds-btn-ghost:active { transform: scale(0.96); }"
+    },
+    {
+      "name": "Glass Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Main structural container for dashboard content.",
+      "html": "<div class=\"ds-card\"><h3>Recent Activity</h3><p>Content goes here.</p></div>",
+      "css": ".ds-card { background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 20px; padding: 24px; box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); font-family: 'Outfit', sans-serif; color: #0f172a; } .ds-card:hover { transform: translateY(-4px) scale(1.01); background: rgba(255, 255, 255, 0.95); box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Glass Dashboard",
+    "overview": "Clean, breezy, and softly elevated. The interface relies heavily on layered and floating surfaces, utilizing glass-like blur effects to create a sense of depth without harsh lines. The overall feel is soft, approachable, and tactile, leaning into large corner radii, pill-shaped buttons, and vivid gradient accents against a soft neutral background.",
+    "keyCharacteristics": [
+      "Soft, glassmorphism-inspired surfaces",
+      "Vivid gradient accents for primary actions and data states",
+      "Heavily rounded (20px to 99px) form language",
+      "Radial mesh-like background gradients"
+    ],
+    "rules": [
+      {
+        "name": "The Glass Background Rule",
+        "body": "Solid white surfaces are forbidden. All elevated cards must use translucent whites (rgba(255, 255, 255, 0.85)) paired with backdrop-filter: blur(12px) to maintain the \"Glass Dashboard\" aesthetic.",
+        "section": "colors"
+      },
+      {
+        "name": "The Blur over Border Rule",
+        "body": "Depth is created by optical blur, not by thick borders. Card borders remain a subtle rgba(0, 0, 0, 0.08) to frame the blur effect, never as a structural element itself.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use rgba() for surface colors and combine them with backdrop-filter: blur(12px).",
+      "Do use a 20px border-radius for structural cards and 99px (pill) for interactive elements like buttons and tabs.",
+      "Do use the Outfit font for all text to maintain the modern, approachable feel."
+    ],
+    "donts": [
+      "Don't use solid, opaque backgrounds for cards or primary surfaces.",
+      "Don't use sharp corners (0px or 4px radii) on any UI elements.",
+      "Don't use flat, singular colors for primary buttons—always use the established linear gradients."
+    ]
+  }
+}
