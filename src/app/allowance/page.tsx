@@ -10,7 +10,10 @@ export default function AllowanceCalculator() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
+  const [issuerName, setIssuerName] = useState('');
+  const [toast, setToast] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
+  const [confirmClearLeavesId, setConfirmClearLeavesId] = useState<string | null>(null);
+  const [confirmMuleAction, setConfirmMuleAction] = useState<{ personId: string, currentStatus: boolean, name: string } | null>(null);
 
   // Settings state
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -28,13 +31,13 @@ export default function AllowanceCalculator() {
     } else if (p === 3) {
       const lastDayOfMonth = getDaysInMonth(new Date(y, m - 1));
       for (let i = 26; i <= lastDayOfMonth; i++) days.push(new Date(y, m - 1, i));
-      
+
       const nextMonth = m === 12 ? 1 : m + 1;
       const nextYear = m === 12 ? y + 1 : y;
       let payday = new Date(nextYear, nextMonth - 1, 7);
       if (payday.getDay() === 6) payday.setDate(9);
       else if (payday.getDay() === 0) payday.setDate(8);
-      
+
       for (let i = 1; i <= payday.getDate(); i++) {
         days.push(new Date(nextYear, nextMonth - 1, i));
       }
@@ -61,13 +64,15 @@ export default function AllowanceCalculator() {
   const [showBlacklistPopup, setShowBlacklistPopup] = useState(false);
   const [blacklistSearch, setBlacklistSearch] = useState('');
   const [updatingBlacklist, setUpdatingBlacklist] = useState<string | null>(null);
-  
+
   const [showDeductionModal, setShowDeductionModal] = useState(false);
   const [deductionMode, setDeductionMode] = useState<'none' | 'all' | 'individual'>('none');
   const [globalDeduction, setGlobalDeduction] = useState<number>(0);
 
   useEffect(() => {
     fetchPersonnel();
+    const savedIssuer = localStorage.getItem('issuerName');
+    if (savedIssuer) setIssuerName(savedIssuer);
   }, []);
 
   useEffect(() => {
@@ -81,7 +86,7 @@ export default function AllowanceCalculator() {
       const data = await res.json();
       if (data.personnel && data.personnel.length > 0) {
         const listToUse = data.personnel.filter((p: any) => p.rank.includes('พลฯ') || p.rank.includes('พลทหาร'));
-        
+
         const initialData = listToUse.map((p: any) => ({
           ...p,
           leaveMap: {} as Record<string, boolean>,
@@ -98,7 +103,7 @@ export default function AllowanceCalculator() {
     setLoading(false);
   };
 
-  const showToast = (msg: string, type: 'success'|'error' = 'success') => {
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
@@ -117,12 +122,12 @@ export default function AllowanceCalculator() {
           const start = Math.min(startIndex, tappedIndex);
           const end = Math.max(startIndex, tappedIndex);
           const targetState = p.leaveMap[p.selectionStart];
-          
+
           const newLeaveMap = { ...p.leaveMap };
           for (let i = start; i <= end; i++) {
             newLeaveMap[formatDateKey(periodDays[i])] = targetState;
           }
-          
+
           return { ...p, leaveMap: newLeaveMap, selectionStart: null };
         } else {
           const newState = !p.leaveMap[dayStr];
@@ -137,11 +142,24 @@ export default function AllowanceCalculator() {
     }));
   };
 
-  const clearLeaves = (personId: string) => {
-    setPersonnel(prev => prev.map(p => p.id === personId ? { ...p, leaveMap: {}, selectionStart: null } : p));
+  const confirmClearLeaves = (personId: string) => {
+    setConfirmClearLeavesId(personId);
   };
 
-  const toggleBlacklist = async (personId: string, currentStatus: boolean) => {
+  const executeClearLeaves = () => {
+    if (!confirmClearLeavesId) return;
+    setPersonnel(prev => prev.map(p => p.id === confirmClearLeavesId ? { ...p, leaveMap: {}, selectionStart: null } : p));
+    setConfirmClearLeavesId(null);
+  };
+
+  const confirmToggleBlacklist = (personId: string, currentStatus: boolean, firstName: string, lastName: string) => {
+    setConfirmMuleAction({ personId, currentStatus, name: `${firstName} ${lastName}` });
+  };
+
+  const executeToggleBlacklist = async () => {
+    if (!confirmMuleAction) return;
+    const { personId, currentStatus, name } = confirmMuleAction;
+    setConfirmMuleAction(null);
     setUpdatingBlacklist(personId);
     try {
       const res = await fetch('/api/personnel', {
@@ -168,6 +186,10 @@ export default function AllowanceCalculator() {
 
   const executeSave = async () => {
     if (personnel.length === 0) return;
+    if (!issuerName.trim()) {
+      showToast('กรุณาระบุชื่อผู้ออกบิล', 'error');
+      return;
+    }
     setSaving(true);
     setShowDeductionModal(false);
 
@@ -176,7 +198,6 @@ export default function AllowanceCalculator() {
       const rolloverUpdates = [];
 
       for (const p of personnel) {
-        if (p.isMuleAccount) continue;
 
         const validPeriodDays = periodDays.filter(d => formatDateKey(d) <= todayStr);
         const leaveCount = validPeriodDays.filter(d => p.leaveMap[formatDateKey(d)]).length;
@@ -186,16 +207,16 @@ export default function AllowanceCalculator() {
 
         if (totalAmount > 0) {
           const remainingInputStr = p.remainingBalanceInput;
-          const selfWithdrawnAmount = remainingInputStr !== undefined && remainingInputStr !== '' 
+          const selfWithdrawnAmount = remainingInputStr !== undefined && remainingInputStr !== ''
             ? Math.max(0, totalAmount - Number(remainingInputStr))
             : 0;
 
-          const otherDeductions = deductionMode === 'all' 
-            ? globalDeduction 
+          const otherDeductions = deductionMode === 'all'
+            ? globalDeduction
             : (deductionMode === 'individual' ? (p.otherDeductionsInput || 0) : 0);
 
           const netAmountAfterDeduction = Math.max(0, totalAmount - selfWithdrawnAmount - otherDeductions);
-          const payableAmount = p.isMuleAccount ? 0 : Math.floor(netAmountAfterDeduction / 100) * 100;
+          const payableAmount = p.isMuleAccount ? netAmountAfterDeduction : Math.floor(netAmountAfterDeduction / 100) * 100;
           const newRollover = p.isMuleAccount ? 0 : netAmountAfterDeduction - payableAmount;
 
           const recId = `${year}_${month}_รอบ${period}_allowance_${p.firstName}_${p.lastName}`.replace(/\s+/g, '');
@@ -214,7 +235,8 @@ export default function AllowanceCalculator() {
             selfWithdrawnAmount: selfWithdrawnAmount,
             otherDeductions: otherDeductions,
             previousRollover: p.rolloverBalance || 0,
-            personId: p.id
+            personId: p.id,
+            issuedBy: issuerName
           });
 
           rolloverUpdates.push({
@@ -264,16 +286,16 @@ export default function AllowanceCalculator() {
     const validPeriodDays = periodDays.filter(d => formatDateKey(d) <= todayStr);
     return sum + validPeriodDays.filter(d => p.leaveMap[formatDateKey(d)]).length;
   }, 0);
-  
+
   const totalBudget = personnel.reduce((sum, p) => {
     if (p.isMuleAccount) return sum;
     const validPeriodDays = periodDays.filter(d => formatDateKey(d) <= todayStr);
     const leaveCount = validPeriodDays.filter(d => p.leaveMap[formatDateKey(d)]).length;
     const currentAmount = Math.max(0, validPeriodDays.length - leaveCount) * baseRate;
     const totalAmount = currentAmount + (p.rolloverBalance || 0);
-    
+
     const remainingInputStr = p.remainingBalanceInput;
-    const selfWithdrawnAmount = remainingInputStr !== undefined && remainingInputStr !== '' 
+    const selfWithdrawnAmount = remainingInputStr !== undefined && remainingInputStr !== ''
       ? Math.max(0, totalAmount - Number(remainingInputStr))
       : 0;
 
@@ -284,7 +306,7 @@ export default function AllowanceCalculator() {
 
     const netAmountAfterDeduction = Math.max(0, totalAmount - selfWithdrawnAmount);
     const payableAmount = Math.floor(netAmountAfterDeduction / 100) * 100;
-    
+
     return sum + payableAmount;
   }, 0);
 
@@ -310,24 +332,35 @@ export default function AllowanceCalculator() {
   return (
     <div className="page-container" style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
       {toast && (
-        <div className="toast" style={{ background: toast.type === 'error' ? 'var(--danger-gradient)' : 'var(--success-gradient)' }}>
-          {toast.msg}
+        <div className="toast-overlay" onClick={() => setToast(null)}>
+          <div className="toast-modal" onClick={e => e.stopPropagation()}>
+            <div className="toast-icon">
+              {toast.type === 'success' ? (
+                <CheckCircle size={56} color="var(--success)" strokeWidth={2} />
+              ) : (
+                <X size={56} color="var(--danger)" strokeWidth={2} />
+              )}
+            </div>
+            <div className="toast-message">
+              {toast.msg}
+            </div>
+          </div>
         </div>
       )}
 
       <header className="flex-between" style={{ marginBottom: '24px' }}>
-        <button 
-          className="btn btn-ghost" 
+        <button
+          className="btn btn-ghost"
           onClick={() => router.back()}
           style={{ padding: '8px 16px', background: 'var(--surface)' }}
         >
-          <ChevronLeft size={18} /> กลับ
+          <ChevronLeft size={18} />
         </button>
         <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Calculator size={20} /> เครื่องมือคำนวณเบี้ยเลี้ยง
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button 
+          <button
             className="btn btn-ghost"
             onClick={() => setShowSettingsModal(true)}
             style={{ padding: '8px 12px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface)' }}
@@ -335,8 +368,8 @@ export default function AllowanceCalculator() {
           >
             <Settings size={18} /> ตั้งค่า
           </button>
-          <button 
-            className="btn btn-ghost" 
+          <button
+            className="btn btn-ghost"
             onClick={() => setShowBlacklistPopup(true)}
             style={{ padding: '8px 12px', color: 'var(--danger)', background: '#fee2e2' }}
             title="จัดการบัญชีม้า"
@@ -373,33 +406,33 @@ export default function AllowanceCalculator() {
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>ไม่พบรายชื่อในระบบ</div>
       ) : (
         <div className="animate-fade-in" style={{ paddingBottom: '100px' }}>
-          
+
           {/* Search and Filters */}
           <div style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', position: 'relative' }}>
               <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
                 <Search size={18} />
               </div>
-              <input 
-                type="text" 
-                placeholder="ค้นหาชื่อกำลังพล..." 
+              <input
+                type="text"
+                placeholder="ค้นหาชื่อกำลังพล..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: '99px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '1rem', outline: 'none' }}
               />
             </div>
-            
+
             <div className="hide-scrollbar" style={{ display: 'flex', gap: '8px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }}>
-              <button 
-                className={`btn ${filterMode === 'all' ? 'btn-primary' : 'btn-ghost'}`} 
-                onClick={() => setFilterMode('all')} 
+              <button
+                className={`btn ${filterMode === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setFilterMode('all')}
                 style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '99px', border: filterMode === 'all' ? 'none' : '1px solid var(--border)', whiteSpace: 'nowrap' }}
               >
                 แสดงทั้งหมด ({personnel.length})
               </button>
-              <button 
-                className={`btn ${filterMode === 'leave' ? 'btn-primary' : 'btn-ghost'}`} 
-                onClick={() => setFilterMode('leave')} 
+              <button
+                className={`btn ${filterMode === 'leave' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setFilterMode('leave')}
                 style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '99px', border: filterMode === 'leave' ? 'none' : '1px solid var(--border)', whiteSpace: 'nowrap' }}
               >
                 แสดงคนลา ({personnel.filter(p => {
@@ -407,9 +440,9 @@ export default function AllowanceCalculator() {
                   return validPeriodDays.some(d => p.leaveMap[formatDateKey(d)]);
                 }).length})
               </button>
-              <button 
-                className={`btn ${filterMode === 'mule' ? 'btn-primary' : 'btn-ghost'}`} 
-                onClick={() => setFilterMode('mule')} 
+              <button
+                className={`btn ${filterMode === 'mule' ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setFilterMode('mule')}
                 style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '99px', border: filterMode === 'mule' ? 'none' : '1px solid var(--border)', whiteSpace: 'nowrap' }}
               >
                 บัญชีม้า ({personnel.filter(p => p.isMuleAccount).length})
@@ -422,12 +455,12 @@ export default function AllowanceCalculator() {
             {paginatedPersonnel.map(p => {
               const validPeriodDays = periodDays.filter(d => formatDateKey(d) <= todayStr);
               const leaveCount = validPeriodDays.filter(d => p.leaveMap[formatDateKey(d)]).length;
-              
+
               const currentAmount = Math.max(0, validPeriodDays.length - leaveCount) * baseRate;
               const totalAmount = currentAmount + (p.rolloverBalance || 0);
-              
+
               const remainingInputStr = p.remainingBalanceInput;
-              const selfWithdrawnAmount = remainingInputStr !== undefined && remainingInputStr !== '' 
+              const selfWithdrawnAmount = remainingInputStr !== undefined && remainingInputStr !== ''
                 ? Math.max(0, totalAmount - Number(remainingInputStr))
                 : 0;
 
@@ -452,7 +485,7 @@ export default function AllowanceCalculator() {
                           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>ยอดคงเหลือ:</span>
                           <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '6px', overflow: 'hidden', maxWidth: '100px' }}>
                             <span style={{ padding: '4px 8px', fontSize: '0.85rem', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.02)' }}>฿</span>
-                            <input 
+                            <input
                               type="number"
                               min="0"
                               max={totalAmount}
@@ -469,7 +502,7 @@ export default function AllowanceCalculator() {
                       )}
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>ยอดจ่ายตู้ (ร้อยเต็ม)</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>ยอดจ่ายตู้</div>
                       <div style={{ fontWeight: 700, fontSize: '1.25rem', color: payableAmount > 0 ? 'var(--primary)' : 'var(--danger)' }}>
                         ฿{payableAmount.toLocaleString()}
                       </div>
@@ -492,8 +525,8 @@ export default function AllowanceCalculator() {
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {leaveCount > 0 && !p.isMuleAccount && (
-                        <button 
-                          onClick={() => clearLeaves(p.id)}
+                        <button
+                          onClick={() => confirmClearLeaves(p.id)}
                           style={{ background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '4px', padding: '2px 6px', fontSize: '0.75rem', cursor: 'pointer' }}
                         >
                           ล้าง
@@ -513,21 +546,21 @@ export default function AllowanceCalculator() {
                       const isFuture = dayStr > todayStr;
                       const isLeave = p.leaveMap[dayStr] || false;
                       const isSelectedStart = p.selectionStart === dayStr;
-                      
+
                       // Highlight cross-month transitions for period 3
                       const isNewMonth = i > 0 && dayNum === 1;
 
                       return (
-                        <div 
+                        <div
                           key={dayStr}
                           onClick={() => { if (!isFuture && !p.isMuleAccount) handleDayTap(p.id, dateObj); }}
                           style={{
                             aspectRatio: '1',
-                            display: 'flex', 
-                            alignItems: 'center', 
+                            display: 'flex',
+                            alignItems: 'center',
                             justifyContent: 'center',
-                            borderRadius: '8px', 
-                            fontSize: '0.9rem', 
+                            borderRadius: '8px',
+                            fontSize: '0.9rem',
                             fontWeight: 600,
                             background: p.isMuleAccount ? '#e2e8f0' : (isFuture ? '#f1f5f9' : (isLeave ? '#fee2e2' : 'var(--surface)')),
                             color: p.isMuleAccount ? '#94a3b8' : (isFuture ? '#cbd5e1' : (isLeave ? '#ef4444' : 'var(--text-primary)')),
@@ -553,7 +586,7 @@ export default function AllowanceCalculator() {
               );
             })}
           </div>
-          
+
           {filteredPersonnel.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
               ไม่พบรายชื่อที่ค้นหา
@@ -563,8 +596,8 @@ export default function AllowanceCalculator() {
           {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex-between" style={{ padding: '20px 0', marginTop: '8px', marginBottom: '80px' }}>
-              <button 
-                className="btn btn-ghost" 
+              <button
+                className="btn btn-ghost"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(p => p - 1)}
                 style={{ padding: '8px 16px', background: 'white', borderRadius: '8px', opacity: currentPage === 1 ? 0.5 : 1 }}
@@ -574,8 +607,8 @@ export default function AllowanceCalculator() {
               <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                 หน้า {currentPage} / {totalPages}
               </div>
-              <button 
-                className="btn btn-ghost" 
+              <button
+                className="btn btn-ghost"
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(p => p + 1)}
                 style={{ padding: '8px 16px', background: 'white', borderRadius: '8px', opacity: currentPage === totalPages ? 0.5 : 1 }}
@@ -586,12 +619,12 @@ export default function AllowanceCalculator() {
           )}
 
           {/* Fixed Bottom Action Bar */}
-          <div style={{ 
-            position: 'fixed', 
-            bottom: 0, 
-            left: 0, 
-            right: 0, 
-            background: 'rgba(255,255,255,0.95)', 
+          <div style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'rgba(255,255,255,0.95)',
             backdropFilter: 'blur(12px)',
             borderTop: '1px solid var(--border)',
             padding: '16px 20px',
@@ -609,15 +642,15 @@ export default function AllowanceCalculator() {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ยอดจ่ายรวม (รอบ {period})</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ยอดจ่ายรวม รอบ {period}</div>
                   <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--primary)' }}>
                     ฿{totalBudget.toLocaleString()}
                   </div>
                 </div>
               </div>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleSaveClick} 
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveClick}
                 disabled={saving}
                 style={{ padding: '12px 20px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(79, 70, 229, 0.4)' }}
               >
@@ -634,28 +667,44 @@ export default function AllowanceCalculator() {
           <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
               <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>หักค่าใช้จ่ายเพิ่มเติม</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>คุณต้องการหักค่าใช้จ่ายอื่นๆ (เช่น ค่าน้ำ, ค่าไฟ, ของขบเคี้ยว) หรือไม่?</div>
+              {/* <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>คุณต้องการหักค่าใช้จ่ายอื่นๆ</div> */}
             </div>
-            
+
             <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>ชื่อผู้ออกบิล</label>
+                <input
+                  type="text"
+                  placeholder=" "
+                  value={issuerName}
+                  onChange={e => {
+                    setIssuerName(e.target.value);
+                    localStorage.setItem('issuerName', e.target.value);
+                  }}
+                  className="search-input"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', outline: 'none' }}
+                />
+              </div>
+
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>ตัวเลือกหักค่าใช้จ่าย</label>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: 'rgba(255,255,255,0.4)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                <button 
-                  className={`btn ${deductionMode === 'none' ? 'btn-primary' : 'btn-ghost'}`} 
-                  onClick={() => setDeductionMode('none')} 
+                <button
+                  className={`btn ${deductionMode === 'none' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setDeductionMode('none')}
                   style={{ flex: 1, padding: '8px 4px', fontSize: '0.85rem', border: 'none' }}
                 >
                   ไม่มีหัก
                 </button>
-                <button 
-                  className={`btn ${deductionMode === 'all' ? 'btn-primary' : 'btn-ghost'}`} 
-                  onClick={() => setDeductionMode('all')} 
+                <button
+                  className={`btn ${deductionMode === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setDeductionMode('all')}
                   style={{ flex: 1, padding: '8px 4px', fontSize: '0.85rem', border: 'none' }}
                 >
                   หักเหมาจ่าย
                 </button>
-                <button 
-                  className={`btn ${deductionMode === 'individual' ? 'btn-primary' : 'btn-ghost'}`} 
-                  onClick={() => setDeductionMode('individual')} 
+                <button
+                  className={`btn ${deductionMode === 'individual' ? 'btn-primary' : 'btn-ghost'}`}
+                  onClick={() => setDeductionMode('individual')}
                   style={{ flex: 1, padding: '8px 4px', fontSize: '0.85rem', border: 'none' }}
                 >
                   ระบุรายคน
@@ -672,9 +721,9 @@ export default function AllowanceCalculator() {
               {deductionMode === 'all' && (
                 <div style={{ padding: '10px 0' }}>
                   <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>ยอดหักเท่ากันทุกคน (บาท)</label>
-                  <input 
-                    type="number" 
-                    placeholder="ระบุยอดเงินที่ต้องการหัก..." 
+                  <input
+                    type="number"
+                    placeholder="ระบุยอดเงินที่ต้องการหัก..."
                     value={globalDeduction || ''}
                     onChange={e => setGlobalDeduction(Number(e.target.value))}
                     style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--primary)', outline: 'none', fontSize: '1rem' }}
@@ -691,8 +740,8 @@ export default function AllowanceCalculator() {
                       <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
                         {p.firstName} {p.lastName}
                       </div>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         placeholder="0"
                         value={p.otherDeductionsInput || ''}
                         onChange={e => {
@@ -708,15 +757,15 @@ export default function AllowanceCalculator() {
             </div>
 
             <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', display: 'flex', gap: '10px', justifyContent: 'flex-end', background: 'rgba(255,255,255,0.9)' }}>
-              <button 
-                className="btn btn-ghost" 
+              <button
+                className="btn btn-ghost"
                 onClick={() => setShowDeductionModal(false)}
                 style={{ padding: '10px 16px' }}
               >
                 กลับไปแก้ไขบิล
               </button>
-              <button 
-                className="btn btn-primary" 
+              <button
+                className="btn btn-primary"
                 onClick={executeSave}
                 disabled={saving}
                 style={{ padding: '10px 20px', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)' }}
@@ -736,15 +785,15 @@ export default function AllowanceCalculator() {
               <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--danger)' }}>จัดการบัญชีม้า</div>
               <button onClick={() => setShowBlacklistPopup(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-secondary)' }}>&times;</button>
             </div>
-            
+
             <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
               <div style={{ position: 'relative', marginBottom: '16px' }}>
                 <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
                   <Search size={16} />
                 </div>
-                <input 
-                  type="text" 
-                  placeholder="ค้นหาชื่อ..." 
+                <input
+                  type="text"
+                  placeholder="ค้นหาชื่อ..."
                   value={blacklistSearch}
                   onChange={e => setBlacklistSearch(e.target.value)}
                   style={{ width: '100%', padding: '10px 12px 10px 36px', borderRadius: '8px', border: '1px solid var(--border)', outline: 'none' }}
@@ -757,10 +806,10 @@ export default function AllowanceCalculator() {
                     <div style={{ fontWeight: 600, color: p.isMuleAccount ? 'var(--danger)' : 'var(--text-primary)' }}>
                       {p.firstName} {p.lastName}
                     </div>
-                    <button 
+                    <button
                       className={`btn ${p.isMuleAccount ? 'btn-ghost' : 'btn-primary'}`}
                       style={{ padding: '6px 12px', fontSize: '0.8rem', background: p.isMuleAccount ? 'white' : 'var(--danger-gradient)', color: p.isMuleAccount ? 'var(--danger)' : 'white' }}
-                      onClick={() => toggleBlacklist(p.id, p.isMuleAccount)}
+                      onClick={() => confirmToggleBlacklist(p.id, p.isMuleAccount, p.firstName, p.lastName)}
                       disabled={updatingBlacklist === p.id}
                     >
                       {updatingBlacklist === p.id ? 'กำลังบันทึก...' : (p.isMuleAccount ? 'ยกเลิกม้า' : 'ตั้งเป็นม้า')}
@@ -776,18 +825,18 @@ export default function AllowanceCalculator() {
       {/* Settings Modal */}
       {showSettingsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', background: 'white' }}>
-            <div className="flex-between" style={{ padding: '20px', borderBottom: '1px solid var(--border)', background: 'var(--primary-gradient)', color: 'white', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+          <div className="card animate-fade-in" style={{ padding: 0, overflow: 'hidden', width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', background: 'white' }}>
+            <div className="flex-between" style={{ padding: '20px', borderBottom: '1px solid var(--border)', background: 'var(--primary-gradient)', color: 'white' }}>
               <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>ตั้งค่ารอบเบี้ยเลี้ยง</div>
               <button onClick={() => setShowSettingsModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
             </div>
-            
+
             <div style={{ padding: '24px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>เรทต่อวัน (บาท)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={baseRate}
                     onChange={(e) => setBaseRate(Number(e.target.value))}
                     style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '1.1rem', outline: 'none' }}
@@ -795,34 +844,35 @@ export default function AllowanceCalculator() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>เดือน</label>
-                  <select 
+                  <select
                     value={month}
                     onChange={(e) => setMonth(Number(e.target.value))}
+                    className="custom-select custom-select-dark"
                     style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '1rem', outline: 'none', background: 'white' }}
                   >
-                    {Array.from({length: 12}).map((_, i) => (
-                      <option key={i+1} value={i+1}>{format(new Date(2000, i, 1), 'MMMM', { locale: th })}</option>
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <option key={i + 1} value={i + 1}>{format(new Date(2000, i, 1), 'MMMM', { locale: th })}</option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>ปี</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={year}
                     onChange={(e) => setYear(Number(e.target.value))}
                     style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '1rem', outline: 'none' }}
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>รอบการจ่ายเบี้ยเลี้ยง</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {[1, 2, 3].map(p => (
                     <button
                       key={p}
-                      onClick={() => setPeriod(p as 1|2|3)}
+                      onClick={() => setPeriod(p as 1 | 2 | 3)}
                       style={{
                         flex: 1,
                         padding: '12px',
@@ -846,14 +896,52 @@ export default function AllowanceCalculator() {
                 </div>
               </div>
             </div>
-            
+
             <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', textAlign: 'right' }}>
-              <button 
-                className="btn btn-primary" 
+              <button
+                className="btn btn-primary"
                 onClick={() => setShowSettingsModal(false)}
                 style={{ padding: '10px 24px' }}
               >
                 บันทึกการตั้งค่า
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Clear Leaves Modal */}
+      {confirmClearLeavesId && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '420px', padding: '32px 24px', textAlign: 'center', background: 'var(--surface)', boxShadow: '0 24px 60px -12px rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.4)' }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
+              ยืนยันการล้างข้อมูล
+            </div>
+            <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: '1.6' }}>
+              คุณต้องการล้างข้อมูลการลาที่เลือกไว้ทั้งหมดใช่หรือไม่?
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setConfirmClearLeavesId(null)} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>ย้อนกลับ</button>
+              <button onClick={executeClearLeaves} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--danger)', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>ยืนยันล้างข้อมูล</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Toggle Mule Modal */}
+      {confirmMuleAction && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '420px', padding: '32px 24px', textAlign: 'center', background: 'var(--surface)', boxShadow: '0 24px 60px -12px rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.4)' }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
+              {confirmMuleAction.currentStatus ? 'ยืนยันยกเลิกบัญชีม้า' : 'ยืนยันตั้งเป็นบัญชีม้า'}
+            </div>
+            <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: '1.6' }}>
+              {confirmMuleAction.currentStatus ? `คุณต้องการยกเลิกให้ ${confirmMuleAction.name} เป็นบัญชีม้าใช่หรือไม่?` : `คุณต้องการตั้งให้ ${confirmMuleAction.name} เป็นบัญชีม้าใช่หรือไม่?`}
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setConfirmMuleAction(null)} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>ย้อนกลับ</button>
+              <button onClick={executeToggleBlacklist} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: confirmMuleAction.currentStatus ? 'var(--primary)' : 'var(--danger)', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>
+                {confirmMuleAction.currentStatus ? 'ยืนยันยกเลิกบัญชีม้า' : 'ยืนยันตั้งบัญชีม้า'}
               </button>
             </div>
           </div>

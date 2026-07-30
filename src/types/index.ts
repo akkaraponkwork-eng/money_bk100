@@ -15,6 +15,7 @@ export interface PaymentRecord {
   otherDeductions?: number;
   previousRollover?: number;
   personId?: string;
+  issuedBy?: string;
 }
 
 export interface Personnel {

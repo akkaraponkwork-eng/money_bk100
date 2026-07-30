@@ -23,6 +23,7 @@ function rowToRecord(row: string[]): PaymentRecord {
     previousRollover: Number(row[13]) || 0,
     personId: row[14] || '',
     otherDeductions: Number(row[15]) || 0,
+    issuedBy: row[16] || undefined,
   };
 }
 
@@ -43,7 +44,8 @@ function recordToRow(r: PaymentRecord): string[] {
     String(r.selfWithdrawnAmount || 0),
     String(r.previousRollover || 0),
     r.personId || '',
-    String(r.otherDeductions || 0)
+    String(r.otherDeductions || 0),
+    r.issuedBy || ''
   ];
 }
 
@@ -55,7 +57,7 @@ export async function GET() {
     
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Payments!A2:P',
+      range: 'Payments!A2:Q',
     });
     
     const rows = (res.data.values || []).filter(r => r[0]);
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
     
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range: 'Payments!A:P',
+      range: 'Payments!A:Q',
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: rows },
     });
@@ -137,6 +139,7 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const recordId = searchParams.get('recordId');
     const batchPrefix = searchParams.get('batchPrefix');
+    const canceledBy = searchParams.get('canceledBy') || 'Unknown';
 
     if (!recordId && !batchPrefix) {
       return NextResponse.json({ error: 'Missing recordId or batchPrefix' }, { status: 400 });
@@ -147,7 +150,7 @@ export async function DELETE(request: Request) {
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Payments!A:P',
+      range: 'Payments!A:Q',
     });
 
     const rows = res.data.values || [];
@@ -230,12 +233,13 @@ export async function DELETE(request: Request) {
       const row = [...rows[index]];
       while (row.length < 16) row.push(''); // Pad to 16 cols (A-P)
       row[16] = new Date().toISOString(); // Col Q is deletedAt
+      row[17] = canceledBy; // Col R is canceledBy
       return row;
     });
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range: 'DeletedPayments!A:Q',
+      range: 'DeletedPayments!A:R',
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: backupRows }
     });
@@ -244,7 +248,7 @@ export async function DELETE(request: Request) {
     try {
       const backupDataRes = await sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: 'DeletedPayments!A:Q'
+        range: 'DeletedPayments!A:R'
       });
       const backupRowsData = backupDataRes.data.values || [];
       const oneMonthAgo = new Date();

@@ -152,6 +152,17 @@ input, textarea, select {
   transform: translateY(-1px);
 }
 
+.btn-danger {
+  background: var(--danger-gradient);
+  color: white;
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
+}
+
+.btn-danger:hover {
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.3);
+  transform: translateY(-1px);
+}
+
 .btn-ghost {
   background: rgba(255, 255, 255, 0.6);
   color: var(--text-primary);
@@ -159,6 +170,16 @@ input, textarea, select {
 }
 
 .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.btn-ghost-danger {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--danger);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.btn-ghost-danger:hover {
   background: rgba(255, 255, 255, 0.9);
 }
 
@@ -238,25 +259,48 @@ input, textarea, select {
   color: var(--danger); 
 }
 
-/* Toast */
-.toast {
+/* Toast Modal */
+.toast-overlay {
   position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 14px 28px;
-  border-radius: 99px;
-  color: white;
-  font-weight: 600;
-  font-size: 0.95rem;
-  z-index: 100;
-  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
 
-@keyframes slideUp {
-  from { bottom: -50px; opacity: 0; transform: translate(-50%, 20px); }
-  to { bottom: 30px; opacity: 1; transform: translate(-50%, 0); }
+.toast-modal {
+  width: 100%;
+  max-width: 320px;
+  padding: 32px 24px;
+  text-align: center;
+  background: var(--surface);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px -12px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  animation: scaleIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.toast-icon {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.toast-message {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* Animations */
@@ -282,6 +326,22 @@ input, textarea, select {
   background: white;
   height: 100%;
   border-radius: 99px;
-  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
   box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+/* Custom Select Dropdown */
+.custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 32px !important;
+  cursor: pointer;
+}
+
+.custom-select-dark {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }

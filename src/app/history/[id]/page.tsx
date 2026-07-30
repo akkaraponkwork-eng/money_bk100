@@ -10,7 +10,7 @@ export default function HistoryPage() {
   const { id } = useParams();
   const router = useRouter();
   const decodedName = decodeURIComponent(id as string);
-  
+
   const [records, setRecords] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,12 +52,12 @@ export default function HistoryPage() {
 
   return (
     <div className="page-container" style={{ padding: '20px' }}>
-      <button 
-        className="btn btn-ghost" 
+      <button
+        className="btn btn-ghost"
         onClick={() => router.back()}
         style={{ marginBottom: '20px', padding: '8px 16px', background: 'var(--surface)' }}
       >
-        <ChevronLeft size={18} /> กลับ
+        <ChevronLeft size={18} />
       </button>
 
       <div className="card" style={{ marginBottom: '20px', background: 'var(--primary-gradient)', color: 'white' }}>
@@ -88,12 +88,13 @@ export default function HistoryPage() {
 
           <div style={{ fontSize: '1.1rem', fontWeight: 600, marginTop: '24px', marginBottom: '12px', paddingLeft: '8px' }}>รายการทั้งหมด</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {records.sort((a,b) => (b.year*100+b.month) - (a.year*100+a.month)).map(r => (
+            {records.sort((a, b) => (b.year * 100 + b.month) - (a.year * 100 + a.month)).map(r => (
               <div key={r.id} className="card flex-between" style={{ padding: '16px 20px', marginBottom: 0 }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{r.month}/{r.year}</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     {r.paymentType === 'allowance' ? 'เบี้ยเลี้ยง' : 'เงินเดือน'}
+                    {r.issuedBy && <span style={{ marginLeft: '6px', paddingLeft: '6px', borderLeft: '1px solid var(--border)' }}>ออกโดย: {r.issuedBy}</span>}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
