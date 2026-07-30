@@ -29,7 +29,7 @@ export default function DashboardPage() {
 
   const fetchRecords = async () => {
     try {
-      const res = await fetch('/api/payments');
+      const res = await fetch('/api/payments', { cache: 'no-store' });
       const data = await res.json();
       if (data.records) setRecords(data.records);
     } catch (e) {

@@ -17,7 +17,7 @@ export default function HistoryPage() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch('/api/payments');
+        const res = await fetch('/api/payments', { cache: 'no-store' });
         const data = await res.json();
         if (data.records) {
           const userRecords = data.records.filter((r: PaymentRecord) => `${r.firstName} ${r.lastName}`.trim() === decodedName.trim());

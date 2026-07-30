@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { Download, Upload, FileSpreadsheet, CheckCircle, Circle, Search, ChevronLeft, ChevronRight, BarChart2, LogOut, Calculator, Trash2, X, Banknote } from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, CheckCircle, Circle, Search, ChevronLeft, ChevronRight, BarChart2, LogOut, Calculator, Trash2, X, Banknote, LayoutDashboard } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { PaymentRecord } from '@/types';
 
@@ -17,7 +17,7 @@ export default function Home() {
   const [confirmBatchPrefix, setConfirmBatchPrefix] = useState<string | null>(null);
   const [confirmRecordToDelete, setConfirmRecordToDelete] = useState<string | null>(null);
 
-  const [uploadType, setUploadType] = useState<'salary' | 'allowance'>('salary');
+
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'salary' | 'allowance' | 'mule'>('all');
   const [batchFilter, setBatchFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +29,7 @@ export default function Home() {
 
   const [cancelerName, setCancelerName] = useState('');
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     fetchRecords();
@@ -62,7 +62,7 @@ export default function Home() {
   const fetchRecords = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/payments');
+      const res = await fetch('/api/payments', { cache: 'no-store' });
       const data = await res.json();
       if (data.records) {
         setRecords(data.records);
@@ -73,77 +73,7 @@ export default function Home() {
     setLoading(false);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws) as any[];
-
-        const newRecords: PaymentRecord[] = [];
-        const currentMonth = new Date().getMonth() + 1;
-        const currentYear = new Date().getFullYear();
-
-        data.forEach(row => {
-          const keys = Object.keys(row);
-          const nameCol = keys.find(k => k.includes('ชื่อ'));
-          const surnameCol = keys.find(k => k.includes('สกุล'));
-          const amountCol = keys.find(k => k.includes('เงิน') || k.includes('ยอด'));
-
-          if (nameCol && amountCol) {
-            const firstName = String(row[nameCol] || '').trim();
-            const lastName = surnameCol ? String(row[surnameCol] || '').trim() : '';
-            const amount = Number(row[amountCol]) || 0;
-
-            if (firstName && amount > 0) {
-              const recId = `${currentYear}_${currentMonth}_${uploadType}_${firstName}_${lastName}`.replace(/\s+/g, '');
-              newRecords.push({
-                id: recId,
-                month: currentMonth,
-                year: currentYear,
-                firstName,
-                lastName,
-                amount,
-                paymentType: uploadType,
-                isPaid: false
-              });
-            }
-          }
-        });
-
-        if (newRecords.length === 0) {
-          showToast('ไม่พบข้อมูลที่ถูกต้องในไฟล์', 'error');
-          return;
-        }
-
-        setLoading(true);
-        const res = await fetch('/api/payments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ records: newRecords })
-        });
-
-        if (res.ok) {
-          showToast(`นำเข้าข้อมูล${uploadType === 'salary' ? 'เงินเดือน' : 'เบี้ยเลี้ยง'}สำเร็จ!`, 'success');
-          fetchRecords();
-        } else {
-          showToast('บันทึกข้อมูลล้มเหลว', 'error');
-        }
-      } catch (err) {
-        showToast('ไฟล์ไม่ถูกต้อง', 'error');
-      } finally {
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        setLoading(false);
-      }
-    };
-    reader.readAsBinaryString(file);
-  };
 
   const togglePayment = async (e: React.MouseEvent, record: PaymentRecord) => {
     e.stopPropagation(); // Prevent card click
@@ -193,34 +123,7 @@ export default function Home() {
       showToast('ลบบิลไม่สำเร็จ', 'error');
     }
   };
-  const downloadTemplate = async () => {
-    try {
-      showToast('กำลังเตรียมไฟล์เทมเพลต...', 'success');
-      const res = await fetch('/api/personnel');
-      const data = await res.json();
 
-      let templateData: any[] = [{ ชื่อ: 'สมชาย', นามสกุล: 'รักชาติ', [uploadType === 'salary' ? 'ยอดเงินเดือน' : 'ยอดเบี้ยเลี้ยง']: 0 }];
-
-      if (data.personnel && data.personnel.length > 0) {
-        // กรองเอาเฉพาะ "พลฯ"
-        const listToUse = data.personnel.filter((p: any) => p.rank.includes('พลฯ') || p.rank.includes('พลทหาร'));
-        const amountHeader = uploadType === 'salary' ? 'ยอดเงินเดือน' : 'ยอดเบี้ยเลี้ยง';
-
-        templateData = listToUse.map((p: any) => ({
-          ชื่อ: p.firstName,
-          นามสกุล: p.lastName,
-          [amountHeader]: 0
-        }));
-      }
-
-      const ws = XLSX.utils.json_to_sheet(templateData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Template');
-      XLSX.writeFile(wb, 'Payment_Template.xlsx');
-    } catch (err) {
-      showToast('เกิดข้อผิดพลาดในการสร้างเทมเพลต', 'error');
-    }
-  };
 
   const confirmDeleteBatch = (prefix: string) => {
     setConfirmBatchPrefix(prefix);
@@ -390,43 +293,20 @@ export default function Home() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', width: '100%' }}>
-          <button className="btn btn-ghost" onClick={() => router.push('/allowance')} title="คำนวณเบี้ยเลี้ยง" style={{ padding: '8px', borderRadius: '50%', color: 'var(--primary)', background: 'var(--surface)', flexShrink: 0 }}>
-            <Calculator size={18} />
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost" onClick={() => router.push('/allowance')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 16px', borderRadius: '100px', background: 'var(--surface)', color: 'var(--primary)', flex: '1 1 auto', fontWeight: 500, border: '1px solid var(--border)' }}>
+            <Calculator size={16} /> เบี้ยเลี้ยง
           </button>
-          <button className="btn btn-ghost" onClick={() => router.push('/salary')} title="สร้างเงินเดือน" style={{ padding: '8px', borderRadius: '50%', color: 'var(--primary)', background: 'var(--surface)', flexShrink: 0 }}>
-            <Banknote size={18} />
+          <button className="btn btn-ghost" onClick={() => router.push('/salary')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 16px', borderRadius: '100px', background: 'var(--surface)', color: 'var(--primary)', flex: '1 1 auto', fontWeight: 500, border: '1px solid var(--border)' }}>
+            <Banknote size={16} /> เงินเดือน
           </button>
-          <button className="btn btn-ghost" onClick={() => router.push('/dashboard')} title="หน้าสรุปข้อมูล (Dashboard)" style={{ padding: '8px', borderRadius: '50%', background: 'var(--surface)', flexShrink: 0 }}>
-            <BarChart2 size={18} />
+          <button className="btn btn-ghost" onClick={() => router.push('/import')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 16px', borderRadius: '100px', background: 'var(--surface)', color: 'var(--primary)', flex: '1 1 auto', fontWeight: 500, border: '1px solid var(--border)' }}>
+            <FileSpreadsheet size={16} /> นำเข้า
+          </button>
+          <button className="btn btn-ghost" onClick={() => router.push('/dashboard')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 16px', borderRadius: '100px', background: 'var(--surface)', color: 'var(--primary)', flex: '1 1 auto', fontWeight: 500, border: '1px solid var(--border)' }}>
+            <LayoutDashboard size={16} /> สรุปข้อมูล
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface)', borderRadius: '99px', border: '1px solid var(--border)', overflow: 'hidden', flex: 1, minWidth: 0 }}>
-            <select
-              value={uploadType}
-              onChange={e => setUploadType(e.target.value as any)}
-              className="custom-select"
-              style={{ padding: '8px 4px 8px 10px', border: 'none', background: 'transparent', outline: 'none', fontWeight: 600, color: 'var(--primary)', flex: 1, minWidth: 0, textOverflow: 'ellipsis' }}
-            >
-              <option value="salary">เงินเดือน</option>
-              <option value="allowance">เบี้ยเลี้ยง</option>
-            </select>
-            <button className="btn btn-ghost" onClick={downloadTemplate} title={`โหลดเทมเพลต ${uploadType === 'salary' ? 'เงินเดือน' : 'เบี้ยเลี้ยง'}`} style={{ padding: '8px 10px', border: 'none', borderLeft: '1px solid var(--border)', borderRadius: 0, flexShrink: 0 }}>
-              <Download size={18} />
-            </button>
-          </div>
-
-          <input
-            type="file"
-            accept=".xlsx"
-            style={{ display: 'none' }}
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-          />
-          <button className="btn btn-primary" onClick={() => fileInputRef.current?.click()} style={{ padding: '8px 12px', whiteSpace: 'nowrap', flexShrink: 0, fontSize: '0.9rem' }}>
-            <Upload size={16} style={{ marginRight: 4 }} />
-            นำเข้า
-          </button>
         </div>
       </header>
 
@@ -631,7 +511,7 @@ export default function Home() {
                         ยอด: <strong style={{ color: 'var(--text-primary)', fontSize: '1.05rem' }}>฿{(record.payableAmount !== undefined ? record.payableAmount : record.amount).toLocaleString()}</strong>
                         {(record as any).otherDeductions > 0 && (
                           <span style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.95rem' }}>
-                            (รับเงินสด ฿{((record.payableAmount !== undefined ? record.payableAmount : record.amount) - (record as any).otherDeductions).toLocaleString()})
+                            {/* (รับเงินสด ฿{((record.payableAmount !== undefined ? record.payableAmount : record.amount) - (record as any).otherDeductions).toLocaleString()}) */}
                           </span>
                         )}
                       </div>

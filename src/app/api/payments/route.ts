@@ -84,8 +84,9 @@ export async function POST(request: Request) {
     
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range: 'Payments!A:Q',
+      range: 'Payments!A:A',
       valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
       requestBody: { values: rows },
     });
 
