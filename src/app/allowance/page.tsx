@@ -348,18 +348,21 @@ export default function AllowanceCalculator() {
         </div>
       )}
 
-      <header className="flex-between" style={{ marginBottom: '24px' }}>
+      <header className="flex-between" style={{ marginBottom: '24px', flexWrap: 'nowrap', gap: '8px' }}>
         <button
           className="btn btn-ghost"
           onClick={() => router.back()}
-          style={{ padding: '8px 16px', background: 'var(--surface)' }}
+          style={{ padding: '8px 16px', background: 'var(--surface)', flexShrink: 0 }}
         >
           <ChevronLeft size={18} />
         </button>
-        <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Calculator size={20} /> เครื่องมือคำนวณเบี้ยเลี้ยง
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+            <Calculator size={18} style={{ flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>เบี้ยเลี้ยง</span>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
           <button
             className="btn btn-ghost"
             onClick={() => setShowSettingsModal(true)}
@@ -618,45 +621,48 @@ export default function AllowanceCalculator() {
             </div>
           )}
 
-          {/* Fixed Bottom Action Bar */}
-          <div style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(12px)',
-            borderTop: '1px solid var(--border)',
-            padding: '16px 20px',
-            display: 'flex',
-            justifyContent: 'center',
-            boxShadow: '0 -4px 20px rgba(0,0,0,0.05)',
-            zIndex: 100
-          }}>
-            <div style={{ width: '100%', maxWidth: '1000px', display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', paddingRight: '16px' }}>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>วันลารวม</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', color: totalLeaveDays > 0 ? 'var(--danger)' : 'var(--success)' }}>
-                    {totalLeaveDays} วัน
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ยอดจ่ายรวม รอบ {period}</div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--primary)' }}>
-                    ฿{totalBudget.toLocaleString()}
-                  </div>
+        </div>
+      )}
+
+      {/* Fixed Bottom Action Bar */}
+      {!loading && personnel.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(12px)',
+          borderTop: '1px solid var(--border)',
+          padding: '16px 20px',
+          display: 'flex',
+          justifyContent: 'center',
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.05)',
+          zIndex: 999
+        }}>
+          <div style={{ width: '100%', maxWidth: '1000px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', paddingRight: '16px' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>วันลารวม</div>
+                <div style={{ fontWeight: 700, fontSize: '1.1rem', color: totalLeaveDays > 0 ? 'var(--danger)' : 'var(--success)' }}>
+                  {totalLeaveDays} วัน
                 </div>
               </div>
-              <button
-                className="btn btn-primary"
-                onClick={handleSaveClick}
-                disabled={saving}
-                style={{ padding: '12px 20px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(79, 70, 229, 0.4)' }}
-              >
-                {saving ? 'กำลังบันทึก...' : <><Save size={18} /> สร้างบิลรอบ {period}</>}
-              </button>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ยอดจ่ายรวม รอบ {period}</div>
+                <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--primary)' }}>
+                  ฿{totalBudget.toLocaleString()}
+                </div>
+              </div>
             </div>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveClick}
+              disabled={saving}
+              style={{ padding: '12px 20px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(79, 70, 229, 0.4)' }}
+            >
+              {saving ? 'กำลังบันทึก...' : <><Save size={18} /> สร้างบิลรอบ {period}</>}
+            </button>
           </div>
         </div>
       )}
@@ -664,7 +670,7 @@ export default function AllowanceCalculator() {
       {/* Deduction Modal */}
       {showDeductionModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
               <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>หักค่าใช้จ่ายเพิ่มเติม</div>
               {/* <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>คุณต้องการหักค่าใช้จ่ายอื่นๆ</div> */}
@@ -780,7 +786,7 @@ export default function AllowanceCalculator() {
       {/* Blacklist Modal */}
       {showBlacklistPopup && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '500px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
             <div className="flex-between" style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
               <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--danger)' }}>จัดการบัญชีม้า</div>
               <button onClick={() => setShowBlacklistPopup(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-secondary)' }}>&times;</button>

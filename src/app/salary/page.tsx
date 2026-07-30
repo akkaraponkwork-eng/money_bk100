@@ -313,7 +313,7 @@ export default function SalaryCalculator() {
 
       {/* Floating Save Button */}
       {!loading && personnel.length > 0 && (
-        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 100, width: '100%', maxWidth: '400px', padding: '0 20px' }}>
+        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 999, width: '100%', maxWidth: '400px', padding: '0 20px' }}>
           <button
             className="btn btn-primary"
             onClick={handleSaveClick}

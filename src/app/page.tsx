@@ -505,318 +505,318 @@ export default function Home() {
                   ยกเลิกบิลชุดนี้
                 </button>
               </div>
-        ))}
-        {batches.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-            ไม่มีประวัติการสร้างบิล
-          </div>
-        )}
-        {/* Pagination Controls for Batches */}
-        {totalBatchPages > 1 && (
-          <div className="flex-between" style={{ padding: '16px 0', marginTop: '8px' }}>
-            <button
-              className="btn btn-ghost"
-              disabled={batchCurrentPage === 1}
-              onClick={() => setBatchCurrentPage(p => p - 1)}
-              style={{ padding: '8px', opacity: batchCurrentPage === 1 ? 0.5 : 1 }}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              หน้า {batchCurrentPage} / {totalBatchPages}
-            </div>
-            <button
-              className="btn btn-ghost"
-              disabled={batchCurrentPage === totalBatchPages}
-              onClick={() => setBatchCurrentPage(p => p + 1)}
-              style={{ padding: '8px', opacity: batchCurrentPage === totalBatchPages ? 0.5 : 1 }}
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        )}
-    </div>
-  ) : (
-    <>
-      {/* Category Filter */}
-      <div className="category-filters" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px', background: 'rgba(255,255,255,0.4)', padding: '4px', borderRadius: '20px', border: '1px solid var(--border)' }}>
-        <button className={`btn ${categoryFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setCategoryFilter('all'); setBatchFilter('all'); }} style={{ flex: '1 1 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>ปกติทั้งหมด</button>
-        <button className={`btn ${categoryFilter === 'salary' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setCategoryFilter('salary'); setBatchFilter('all'); }} style={{ flex: '1 1 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>เงินเดือน</button>
-        <button className={`btn ${categoryFilter === 'allowance' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setCategoryFilter('allowance'); setBatchFilter('all'); }} style={{ flex: '1 1 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>เบี้ยเลี้ยง</button>
-        <button className={`btn ${categoryFilter === 'mule' ? 'btn-danger' : 'btn-ghost-danger'}`} onClick={() => { setCategoryFilter('mule'); setBatchFilter('all'); }} style={{ flex: '1 1 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>บัญชีม้า</button>
-      </div>
-
-      {/* Batch Filter Dropdown */}
-      {displayBatches.length > 0 && (
-        <div style={{ marginBottom: '16px' }}>
-          <select
-            value={batchFilter}
-            onChange={e => setBatchFilter(e.target.value)}
-            className="custom-select custom-select-dark"
-            style={{ width: '100%', padding: '10px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.9rem', outline: 'none', color: 'var(--text-primary)', fontWeight: 500 }}
-          >
-            <option value="all">ดูทุกบิลรวมกัน</option>
-            {displayBatches.map(b => (
-              <option key={b.prefix} value={b.prefix}>{b.title}</option>
             ))}
-          </select>
-        </div>
-      )}
-
-
-      {/* Search Bar */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative' }}>
-        <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
-          <Search size={18} />
-        </div>
-        <input
-          type="text"
-          placeholder="ค้นหาชื่อกำลังพล..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: '99px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '1rem', outline: 'none' }}
-        />
-      </div>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-          <div style={{ display: 'inline-block', width: '30px', height: '30px', border: '3px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-          <div style={{ marginTop: '12px', fontWeight: 500 }}>กำลังเชื่อมต่อ Google Sheets...</div>
-        </div>
-      ) : filteredRecords.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-            <FileSpreadsheet size={48} strokeWidth={1.5} color="var(--text-muted)" />
-          </div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
-            ไม่พบข้อมูล
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
-          {paginatedRecords.map((record, idx) => (
-            <div
-              key={record.id}
-              className="card flex-between"
-              onClick={() => router.push(`/history/${encodeURIComponent(record.firstName + ' ' + record.lastName)}`)}
-              style={{
-                padding: '16px 20px',
-                animationDelay: `${idx * 0.03}s`,
-                marginBottom: 0,
-                cursor: 'pointer',
-                opacity: (record as any).isMuleAccount ? 0.6 : 1
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-primary)', textDecoration: (record as any).isMuleAccount ? 'line-through' : 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {record.firstName} {record.lastName}
-                  {(record as any).isMuleAccount && (
-                    <span style={{ fontSize: '0.7rem', background: 'var(--danger-gradient)', color: 'white', padding: '2px 6px', borderRadius: '4px', textDecoration: 'none' }}>บัญชีม้า</span>
-                  )}
-                  {(record as any).selfWithdrawnAmount > 0 && (
-                    <span style={{ fontSize: '0.7rem', background: 'var(--primary-gradient)', color: 'white', padding: '2px 6px', borderRadius: '4px', textDecoration: 'none' }}>
-                      หักกดเอง: ฿{(record as any).selfWithdrawnAmount.toLocaleString()}
-                    </span>
-                  )}
-                  {(record as any).otherDeductions > 0 && (
-                    <span style={{ fontSize: '0.7rem', background: 'var(--danger)', color: 'white', padding: '2px 6px', borderRadius: '4px', textDecoration: 'none' }}>
-                      หักอื่นๆ: ฿{(record as any).otherDeductions.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className={`badge ${record.paymentType === 'allowance' ? 'badge-primary' : ''}`} style={{ padding: '2px 8px', fontSize: '0.7rem', background: record.paymentType === 'allowance' ? 'var(--primary-gradient)' : 'var(--surface-2)', color: record.paymentType === 'allowance' ? 'white' : 'var(--text-secondary)' }}>
-                    {record.paymentType === 'allowance' ? 'เบี้ยเลี้ยง' : 'เงินเดือน'}
-                  </span>
-                  ยอด: <strong style={{ color: 'var(--text-primary)', fontSize: '1.05rem' }}>฿{(record.payableAmount !== undefined ? record.payableAmount : record.amount).toLocaleString()}</strong>
-                  {(record as any).otherDeductions > 0 && (
-                    <span style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.95rem' }}>
-                      (รับเงินสด ฿{((record.payableAmount !== undefined ? record.payableAmount : record.amount) - (record as any).otherDeductions).toLocaleString()})
-                    </span>
-                  )}
-                </div>
+            {batches.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+                ไม่มีประวัติการสร้างบิล
               </div>
-
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button
-                  className={`btn badge ${record.isPaid ? 'badge-success' : 'badge-danger'}`}
-                  style={{ minWidth: '120px', cursor: 'pointer', display: 'flex', gap: '6px', justifyContent: 'center' }}
-                  onClick={(e) => togglePayment(e, record)}
-                >
-                  {record.isPaid ? <><CheckCircle size={14} strokeWidth={2.5} /> จ่ายแล้ว{record.paidAt ? ` ${format(new Date(record.paidAt), 'HH:mm')} น.` : ''}</> : <><Circle size={14} strokeWidth={2.5} /> รอการจ่าย</>}
-                </button>
+            )}
+            {/* Pagination Controls for Batches */}
+            {totalBatchPages > 1 && (
+              <div className="flex-between" style={{ padding: '16px 0', marginTop: '8px' }}>
                 <button
                   className="btn btn-ghost"
-                  onClick={(e) => confirmDeleteRecord(e, record.id)}
-                  style={{ padding: '6px', color: 'var(--danger)', border: 'none', background: 'var(--surface)' }}
-                  title="ลบบิลนี้"
+                  disabled={batchCurrentPage === 1}
+                  onClick={() => setBatchCurrentPage(p => p - 1)}
+                  style={{ padding: '8px', opacity: batchCurrentPage === 1 ? 0.5 : 1 }}
                 >
-                  <Trash2 size={16} />
+                  <ChevronLeft size={18} />
+                </button>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  หน้า {batchCurrentPage} / {totalBatchPages}
+                </div>
+                <button
+                  className="btn btn-ghost"
+                  disabled={batchCurrentPage === totalBatchPages}
+                  onClick={() => setBatchCurrentPage(p => p + 1)}
+                  style={{ padding: '8px', opacity: batchCurrentPage === totalBatchPages ? 0.5 : 1 }}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Category Filter */}
+            <div className="category-filters" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px', background: 'rgba(255,255,255,0.4)', padding: '4px', borderRadius: '20px', border: '1px solid var(--border)' }}>
+              <button className={`btn ${categoryFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setCategoryFilter('all'); setBatchFilter('all'); }} style={{ flex: '1 1 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>ปกติทั้งหมด</button>
+              <button className={`btn ${categoryFilter === 'salary' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setCategoryFilter('salary'); setBatchFilter('all'); }} style={{ flex: '1 1 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>เงินเดือน</button>
+              <button className={`btn ${categoryFilter === 'allowance' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => { setCategoryFilter('allowance'); setBatchFilter('all'); }} style={{ flex: '1 1 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>เบี้ยเลี้ยง</button>
+              <button className={`btn ${categoryFilter === 'mule' ? 'btn-danger' : 'btn-ghost-danger'}`} onClick={() => { setCategoryFilter('mule'); setBatchFilter('all'); }} style={{ flex: '1 1 auto', padding: '6px', fontSize: '0.85rem', border: 'none', whiteSpace: 'nowrap' }}>บัญชีม้า</button>
+            </div>
+
+            {/* Batch Filter Dropdown */}
+            {displayBatches.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <select
+                  value={batchFilter}
+                  onChange={e => setBatchFilter(e.target.value)}
+                  className="custom-select custom-select-dark"
+                  style={{ width: '100%', padding: '10px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '0.9rem', outline: 'none', color: 'var(--text-primary)', fontWeight: 500 }}
+                >
+                  <option value="all">ดูทุกบิลรวมกัน</option>
+                  {displayBatches.map(b => (
+                    <option key={b.prefix} value={b.prefix}>{b.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+
+            {/* Search Bar */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                <Search size={18} />
+              </div>
+              <input
+                type="text"
+                placeholder="ค้นหาชื่อกำลังพล..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: '99px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '1rem', outline: 'none' }}
+              />
+            </div>
+
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+                <div style={{ display: 'inline-block', width: '30px', height: '30px', border: '3px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                <div style={{ marginTop: '12px', fontWeight: 500 }}>กำลังเชื่อมต่อ Google Sheets...</div>
+              </div>
+            ) : filteredRecords.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                  <FileSpreadsheet size={48} strokeWidth={1.5} color="var(--text-muted)" />
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                  ไม่พบข้อมูล
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+                {paginatedRecords.map((record, idx) => (
+                  <div
+                    key={record.id}
+                    className="card flex-between"
+                    onClick={() => router.push(`/history/${encodeURIComponent(record.firstName + ' ' + record.lastName)}`)}
+                    style={{
+                      padding: '16px 20px',
+                      animationDelay: `${idx * 0.03}s`,
+                      marginBottom: 0,
+                      cursor: 'pointer',
+                      opacity: (record as any).isMuleAccount ? 0.6 : 1
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-primary)', textDecoration: (record as any).isMuleAccount ? 'line-through' : 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {record.firstName} {record.lastName}
+                        {(record as any).isMuleAccount && (
+                          <span style={{ fontSize: '0.7rem', background: 'var(--danger-gradient)', color: 'white', padding: '2px 6px', borderRadius: '4px', textDecoration: 'none' }}>บัญชีม้า</span>
+                        )}
+                        {(record as any).selfWithdrawnAmount > 0 && (
+                          <span style={{ fontSize: '0.7rem', background: 'var(--primary-gradient)', color: 'white', padding: '2px 6px', borderRadius: '4px', textDecoration: 'none' }}>
+                            หักกดเอง: ฿{(record as any).selfWithdrawnAmount.toLocaleString()}
+                          </span>
+                        )}
+                        {(record as any).otherDeductions > 0 && (
+                          <span style={{ fontSize: '0.7rem', background: 'var(--danger)', color: 'white', padding: '2px 6px', borderRadius: '4px', textDecoration: 'none' }}>
+                            หักอื่นๆ: ฿{(record as any).otherDeductions.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className={`badge ${record.paymentType === 'allowance' ? 'badge-primary' : ''}`} style={{ padding: '2px 8px', fontSize: '0.7rem', background: record.paymentType === 'allowance' ? 'var(--primary-gradient)' : 'var(--surface-2)', color: record.paymentType === 'allowance' ? 'white' : 'var(--text-secondary)' }}>
+                          {record.paymentType === 'allowance' ? 'เบี้ยเลี้ยง' : 'เงินเดือน'}
+                        </span>
+                        ยอด: <strong style={{ color: 'var(--text-primary)', fontSize: '1.05rem' }}>฿{(record.payableAmount !== undefined ? record.payableAmount : record.amount).toLocaleString()}</strong>
+                        {(record as any).otherDeductions > 0 && (
+                          <span style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.95rem' }}>
+                            (รับเงินสด ฿{((record.payableAmount !== undefined ? record.payableAmount : record.amount) - (record as any).otherDeductions).toLocaleString()})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        className={`btn badge ${record.isPaid ? 'badge-success' : 'badge-danger'}`}
+                        style={{ minWidth: '120px', cursor: 'pointer', display: 'flex', gap: '6px', justifyContent: 'center' }}
+                        onClick={(e) => togglePayment(e, record)}
+                      >
+                        {record.isPaid ? <><CheckCircle size={14} strokeWidth={2.5} /> จ่ายแล้ว{record.paidAt ? ` ${format(new Date(record.paidAt), 'HH:mm')} น.` : ''}</> : <><Circle size={14} strokeWidth={2.5} /> รอการจ่าย</>}
+                      </button>
+                      <button
+                        className="btn btn-ghost"
+                        onClick={(e) => confirmDeleteRecord(e, record.id)}
+                        style={{ padding: '6px', color: 'var(--danger)', border: 'none', background: 'var(--surface)' }}
+                        title="ลบบิลนี้"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex-between" style={{ padding: '16px 0', marginTop: '8px' }}>
+                    <button
+                      className="btn btn-ghost"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(p => p - 1)}
+                      style={{ padding: '8px', opacity: currentPage === 1 ? 0.5 : 1 }}
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      หน้า {currentPage} / {totalPages}
+                    </div>
+                    <button
+                      className="btn btn-ghost"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(p => p + 1)}
+                      style={{ padding: '8px', opacity: currentPage === totalPages ? 0.5 : 1 }}
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )
+        }
+      </main >
+
+      {/* Impeccable Confirmation Modal */}
+      {
+        confirmBatchPrefix && (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}>
+            <div className="card animate-fade-in" style={{
+              width: '100%',
+              maxWidth: '420px',
+              padding: '32px 24px',
+              textAlign: 'center',
+              background: 'var(--surface)',
+              boxShadow: '0 24px 60px -12px rgba(0,0,0,0.15)',
+              border: '1px solid rgba(255,255,255,0.4)'
+            }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                ยืนยันการยกเลิกบิลชุดนี้
+              </div>
+              <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.6' }}>
+                ข้อมูลบิลทั้งหมดในรอบนี้จะถูกลบออกจากระบบอย่างถาวร
+              </div>
+
+              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>ชื่อผู้ยกเลิกบิล</label>
+                <input
+                  type="text"
+                  placeholder=""
+                  value={cancelerName}
+                  onChange={e => {
+                    setCancelerName(e.target.value);
+                    localStorage.setItem('issuerName', e.target.value);
+                  }}
+                  className="search-input"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => setConfirmBatchPrefix(null)}
+                  style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  ย้อนกลับ
+                </button>
+                <button
+                  onClick={executeDeleteBatch}
+                  style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--danger)', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  ยืนยันการลบ
                 </button>
               </div>
             </div>
-          ))}
+          </div>
+        )
+      }
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex-between" style={{ padding: '16px 0', marginTop: '8px' }}>
-              <button
-                className="btn btn-ghost"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
-                style={{ padding: '8px', opacity: currentPage === 1 ? 0.5 : 1 }}
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                หน้า {currentPage} / {totalPages}
+      {/* Confirm Delete Single Record Modal */}
+      {
+        confirmRecordToDelete && (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}>
+            <div className="card animate-fade-in" style={{
+              width: '100%',
+              maxWidth: '420px',
+              padding: '32px 24px',
+              textAlign: 'center',
+              background: 'var(--surface)',
+              boxShadow: '0 24px 60px -12px rgba(0,0,0,0.15)',
+              border: '1px solid rgba(255,255,255,0.4)'
+            }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                ยืนยันการลบบิลนี้
               </div>
-              <button
-                className="btn btn-ghost"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => p + 1)}
-                style={{ padding: '8px', opacity: currentPage === totalPages ? 0.5 : 1 }}
-              >
-                <ChevronRight size={18} />
-              </button>
+              <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.6' }}>
+                บิลนี้จะถูกลบออกจากระบบอย่างถาวรและไม่สามารถกู้คืนได้
+              </div>
+
+              <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>ชื่อผู้ยกเลิกบิล</label>
+                <input
+                  type="text"
+                  placeholder=" "
+                  value={cancelerName}
+                  onChange={e => {
+                    setCancelerName(e.target.value);
+                    localStorage.setItem('issuerName', e.target.value);
+                  }}
+                  className="search-input"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => setConfirmRecordToDelete(null)}
+                  style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  ย้อนกลับ
+                </button>
+                <button
+                  onClick={executeDeleteRecord}
+                  style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--danger)', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  ยืนยันการลบ
+                </button>
+              </div>
             </div>
-          )}
-        </div>
-      )}
-    </>
-  )
-}
-      </main >
-
-  {/* Impeccable Confirmation Modal */ }
-{
-  confirmBatchPrefix && (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.4)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div className="card animate-fade-in" style={{
-        width: '100%',
-        maxWidth: '420px',
-        padding: '32px 24px',
-        textAlign: 'center',
-        background: 'var(--surface)',
-        boxShadow: '0 24px 60px -12px rgba(0,0,0,0.15)',
-        border: '1px solid rgba(255,255,255,0.4)'
-      }}>
-        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
-          ยืนยันการยกเลิกบิลชุดนี้
-        </div>
-        <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.6' }}>
-          ข้อมูลบิลทั้งหมดในรอบนี้จะถูกลบออกจากระบบอย่างถาวร
-        </div>
-
-        <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>ชื่อผู้ยกเลิกบิล</label>
-          <input
-            type="text"
-            placeholder=""
-            value={cancelerName}
-            onChange={e => {
-              setCancelerName(e.target.value);
-              localStorage.setItem('issuerName', e.target.value);
-            }}
-            className="search-input"
-            style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', outline: 'none' }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={() => setConfirmBatchPrefix(null)}
-            style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-          >
-            ย้อนกลับ
-          </button>
-          <button
-            onClick={executeDeleteBatch}
-            style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--danger)', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-          >
-            ยืนยันการลบ
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-{/* Confirm Delete Single Record Modal */ }
-{
-  confirmRecordToDelete && (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.4)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div className="card animate-fade-in" style={{
-        width: '100%',
-        maxWidth: '420px',
-        padding: '32px 24px',
-        textAlign: 'center',
-        background: 'var(--surface)',
-        boxShadow: '0 24px 60px -12px rgba(0,0,0,0.15)',
-        border: '1px solid rgba(255,255,255,0.4)'
-      }}>
-        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
-          ยืนยันการลบบิลนี้
-        </div>
-        <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.6' }}>
-          บิลนี้จะถูกลบออกจากระบบอย่างถาวรและไม่สามารถกู้คืนได้
-        </div>
-
-        <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>ชื่อผู้ยกเลิกบิล</label>
-          <input
-            type="text"
-            placeholder=" "
-            value={cancelerName}
-            onChange={e => {
-              setCancelerName(e.target.value);
-              localStorage.setItem('issuerName', e.target.value);
-            }}
-            className="search-input"
-            style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', outline: 'none' }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={() => setConfirmRecordToDelete(null)}
-            style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-          >
-            ย้อนกลับ
-          </button>
-          <button
-            onClick={executeDeleteRecord}
-            style={{ flex: 1, padding: '12px', borderRadius: '12px', background: 'var(--danger)', border: 'none', color: 'white', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-          >
-            ยืนยันการลบ
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+          </div>
+        )
+      }
     </div >
   );
 }
