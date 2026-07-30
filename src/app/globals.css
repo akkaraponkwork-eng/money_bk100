@@ -106,6 +106,10 @@ input, textarea, select {
   overflow: hidden;
 }
 
+.dashboard-card:hover {
+  background: var(--primary-gradient);
+}
+
 .dashboard-card::after {
   content: '';
   position: absolute;
